@@ -56,11 +56,6 @@
             "type": "object",
             "title": "translate 设置",
             "properties": {
-                "translateSpeaker.enable": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "启用功能"
-                },
                 "translateSpeaker.mode": {
                     "type": "string",
                     "default": "manual",
