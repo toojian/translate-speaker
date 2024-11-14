@@ -152,7 +152,7 @@ function formatPickerItem(options) {
         const reg = /\{(.*?)\}/g
         const arr = pickLabelFormat.match(reg)
         arr.forEach(row=>{
-            const key = row.replace('{','').replace('}','')
+            const key = row.replace(/[{}]/g, '')
             const value = options[key] || ''
             label = label.replace(row,value)
         })
@@ -204,11 +204,12 @@ function translateResultsCodingMode({ text, from, to, results }, options = { rep
                         const typeName = typeMaps[fmType] || '-error-'
                         if (fmType === 'auto') {
                             outText = e2var(dst, $event.fileExtension);
-                            description = `根据（当前文件扩展名）确定格式化类型，并替换当前选中字符串`
+                            // description = `根据（当前文件扩展名）确定格式化类型，并替换当前选中字符串`
                         } else {
                             outText = e2var(dst, '', fmType);
-                            description = `替换选中字符串为（${typeName}）格式化后的字符串`
+                            // description = `替换选中字符串为（${typeName}）格式化后的字符串`
                         }
+                        description = `${typeName}`;
                         items.push(formatPickerItem({
                             type,
                             typeName,
@@ -220,13 +221,6 @@ function translateResultsCodingMode({ text, from, to, results }, options = { rep
                             description,
                             outText
                         }))
-                        // items.push({
-                        //     original: text,
-                        //     label: `${num} [ ${shortText} ] 替换(${typeName}) => [ ${longTextShowShort(outText)} ]`,
-                        //     description: description,
-                        //     dst: dst,
-                        //     outText: outText,
-                        // });
                         num += 1
                     })
                 }
@@ -243,14 +237,6 @@ function translateResultsCodingMode({ text, from, to, results }, options = { rep
                         description: `替换选中字符串`,
                         outText
                     }))
-
-                    // items.push({
-                    //     original: text,
-                    //     label: `${num} [ ${shortText} ] 替换 => [ ${shortDst} ]`,
-                    //     description: `替换选中字符串`,
-                    //     dst: dst,
-                    //     outText: dst,
-                    // });
                     num += 1
                 }
 
@@ -267,13 +253,6 @@ function translateResultsCodingMode({ text, from, to, results }, options = { rep
                         description: `保留原文并在后方[]中加入翻译`,
                         outText
                     }))
-                    // items.push({
-                    //     original: text,
-                    //     label: `${num} [ ${shortText} ] 追加 => [ ${shortDst} ]`,
-                    //     description: `保留原文并在后方[]中加入翻译`,
-                    //     dst: dst,
-                    //     outText: `${text} [ ${dst} ]`,
-                    // });
                     num += 1
                 }
             })
@@ -342,7 +321,8 @@ class WordVoice {
             to = 'en'
         }
         getTranslate({ text, from, to }).then(res => {
-            let { results } = res
+            let { results } = res              //1.7.5
+            // let { text, from, to, results } = res //1.7.4 
             let outDst = ''
             results.forEach((item) => {
                 let dst = decodeURIComponent(item.dst);
@@ -359,7 +339,7 @@ class WordVoice {
 
     // 初始化状态栏
     initStatusBarItemText() {
-        this._statusBarItem.text = `翻译朗读者就绪( ${getConfigValue('mode')} | ${getConfigValue('apiType')} )`;
+        this._statusBarItem.text = `( ${getConfigValue('mode')} | ${getConfigValue('apiType')} )`;
         $event.results = { text: '', from: '', to: '', results: [] } // 翻译结果清空
     }
 
@@ -386,9 +366,9 @@ class WordVoice {
 
     // 用户主动点击了翻译按钮
     startTranslateCommandHandler() {
-        if (!getConfigValue('enable')) {
-            return showInformationMessage('请先启用插件enable参数', 100)
-        }
+        // if (!getConfigValue('enable')) {
+        //     return showInformationMessage('请先启用插件enable参数', 100)
+        // }
         let text = this._getSelectionText()
         if (text && text.length > 1 && text.length <= getConfigValue('wordMaxLength')) {
             let to = 'zh'
@@ -413,9 +393,9 @@ class WordVoice {
 
     // 用户点击了转换变量格式菜单
     startConvertVariableFormat() {
-        if (!getConfigValue('enable')) {
-            return showInformationMessage('请先启用插件enable参数', 100)
-        }
+        // if (!getConfigValue('enable')) {
+        //     return showInformationMessage('请先启用插件enable参数', 100)
+        // }
         const originText = this._getSelectionText()
         let text = originText
         if (originText) {
@@ -433,8 +413,8 @@ class WordVoice {
             // 小驼峰命名格式
             return text.replace(/([A-Z])/g, ' $1').toLowerCase();
         } else if (/^[A-Z][a-zA-Z0-9]*$/.test(text)) {
-            // 大驼峰命名格式
-            return text.replace(/([A-Z])/g, ' $1').trim().toLowerCase();
+            // 大驼峰命或全大写
+            return text.replace(/([a-z0-9])([A-Z])/g, "$1 $2").toLowerCase();
         } else if (/^[a-zA-Z][a-zA-Z0-9_]*$/.test(text)) {
             // 下划线（蛇形）命名格式
             return text.replace(/_/g, ' ').toLowerCase();
@@ -449,21 +429,19 @@ class WordVoice {
 
     // 初始化指令
     _initCommand() {
-        let arr = []
-        this._commands.forEach(cmd => {
-            let obj = vscode.commands.registerCommand(cmd.command, () => {
-                this[cmd.handler]()
-            })
-            this.context.subscriptions.push(obj);
-            arr.push(obj)
-        })
-        return arr;
-    }
-
+    return this._commands.map(cmd => {
+        let obj = vscode.commands.registerCommand(cmd.command, () => {
+            this[cmd.handler]();
+        });
+        this.context.subscriptions.push(obj);
+        return obj;
+    });
+}
     onDidChanage() {
         let editor = vscode.window.activeTextEditor;
         let doc = editor.document;
-        if (editor.selection.isEmpty || !getConfigValue('enable')) {
+        // if (editor.selection.isEmpty || !getConfigValue('enable')) {
+        if (editor.selection.isEmpty) {
             // 没有选中文本或者没有启用功能；
             return
         }
