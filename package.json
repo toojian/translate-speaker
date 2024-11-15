@@ -1,194 +1,206 @@
 {
-    "name": "translate-speaker",
-    "displayName": "translate speaker 翻译朗读者API",
-    "description": "这是一个非常简单好用的翻译-朗读-替换/追加翻译一体化插件，你只需要配置一个接口参数即可。",
-    "version": "1.7.5b",
-    "publisher": "pcloth",
-    "icon": "assert/logo.png",
-    "engines": {
-        "vscode": "^1.1.37"
-    },
-    "categories": [
-        "Other"
-    ],
-    "activationEvents": [
-        "*"
-    ],
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/pcloth/translate-speaker.git"
-    },
-    "main": "./extension",
-    "contributes": {
-        "commands": [
-            {
-                "command": "extension.startTranslate",
-                "title": "翻译并朗读"
-            },
-            {
-                "command": "extension.convertVariableFormat",
-                "title": "转换变量格式并朗读"
-            }
-        ],
-        "keybindings": [
-            {
-                "command": "extension.startTranslate",
-                "key": "ctrl+shift+t",
-                "mac": "cmd+shift+t",
-                "when": "editorHasSelection"
-            }
-        ],
-        "menus": {
-            "editor/context": [
-                {
-                    "command": "extension.startTranslate",
-                    "group": "navigation",
-                    "when": "editorHasSelection"
-                },
-                {
-                    "command": "extension.convertVariableFormat",
-                    "group": "navigation",
-                    "when": "editorHasSelection"
-                }
-            ]
-        },
-        "configuration": {
-            "type": "object",
-            "title": "translate 设置",
-            "properties": {
-                "translateSpeaker.mode": {
-                    "type": "string",
-                    "default": "manual",
-                    "enum": [
-                        "manual",
-                        "autoEnglish",
-                        "autoChinese",
-                        "auto"
-                    ],
-                    "description": [
-                        "手动模式：必须点击菜单或者快捷键后执行翻译。（翻译结果会弹出拾取菜单）",
-                        "自动英文翻译到中文模式：选中英文后，自动翻译（翻译结果只显示在左下角，点击后弹出拾取菜单）",
-                        "自动中文翻译到英文模式：选中中文后，自动翻译（翻译结果只显示在左下角，点击后弹出拾取菜单）",
-                        "自动翻译模式：选中内容后，自动翻译（翻译结果只显示在左下角，点击后弹出拾取菜单）"
-                    ]
-                },
-                "translateSpeaker.englishNotCodingMode": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "英文不转换成变量模式"
-                },
-                "translateSpeaker.pickTypeAndSort": {
-                    "type": "array",
-                    "default": [
-                        "coding",
-                        "replace",
-                        "append"
-                    ],
-                    "scope": "scope",
-                    "description": "配置拾取器和排序：\ncoding=转换成变量模式\nreplace=直接替换原文\nappend=在原文后面追加翻译"
-                },
-                "translateSpeaker.pickLabelFormat":{
-                    "type":"string",
-                    "default":"{num} [ {shortText} ] {midstr}{typeName} => [ {shortOutText} ]",
-                    "description":"拾取器的显示格式"
-                },
-                "translateSpeaker.showPickDesc": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "是否显示拾取器的描述"
-                },
-                "translateSpeaker.codingFormat": {
-                    "type": "array",
-                    "default": [
-                        "auto",
-                        "PascalCase",
-                        "lowerCamelCase",
-                        "snake_case",
-                        "SNAKE_CASE",
-                        "space",
-                        "kebab-case"
-                    ],
-                    "scope": "scope",
-                    "description": "转换成变量模式的格式：\nauto=自动识别\nPascalCase=大驼峰\nlowerCamelCase=小驼峰\nsnake_case=小写蛇形（下划线）\nSNAKE_CASE=大写蛇型（下划线）\nspace=空格\nkebab-case=短横线"
-                },
-                "translateSpeaker.enableSpeak": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "启用朗读"
-                },
-                "translateSpeaker.translateTimeout": {
-                    "type": "number",
-                    "default": 15000,
-                    "description": "翻译显示时间"
-                },
-                "translateSpeaker.wordMaxLength": {
-                    "type": "number",
-                    "default": 34,
-                    "description": "超过这个长度就不处理了。"
-                },
-                "translateSpeaker.apiType": {
-                    "type": "string",
-                    "default": "bing",
-                    "enum": [
-                        "baidu",
-                        "bing",
-                        "tencent",
-                        "googleFree"
-                    ],
-                    "description": [
-                        "百度翻译API-需要配置账号",
-                        "必应接口-需要配置appid，网上可搜索到免费的appid，有些账号需要国区用，有些账号需要VPN",
-                        "谷歌免费接口(VPN)-无需配置账号"
-                    ]
-                },
-                "translateSpeaker.apiAccount": {
-                    "type": "array",
-                    "default": [
-                        "bing=AFC76A66CF4F434ED080D245C30CF1E71C22959C,,1"
-                    ],
-                    "scope": "scope",
-                    "description": "翻译API账号，格式：apiTyp=appid,password,多账号key（比如2）"
-                },
-                "translateSpeaker.apiAccountKey": {
-                    "type": "string",
-                    "default": "",
-                    "description": "如果同一个apiType有多个账号，可以在这里指定一个字符串，用来匹配translateSpeaker.apiAccount参数中的多账号key"
-                },
-                "translateSpeaker.appId": {
-                    "type": "string",
-                    "default": "",
-                    "description": "翻译API的账号，通常是appid"
-                },
-                "translateSpeaker.password": {
-                    "type": "string",
-                    "default": "",
-                    "description": "翻译API的账号密钥，通常是指password或者appSecret"
-                }
-            }
-        }
-    },
-    "scripts": {
-        "postinstall": "node ./node_modules/vscode/bin/install",
-        "test": "node ./node_modules/vscode/bin/test",
-        "publish": "npx @vscode/vsce publish"
-    },
-    "devDependencies": {
-        "@types/mocha": "^2.2.42",
-        "@types/node": "^7.0.43",
-        "eslint": "^4.11.0",
-        "typescript": "^2.6.1",
-        "vscode": "^1.1.37"
-    },
-    "dependencies": {
-        "@types/mocha": "^2.2.42",
-        "@types/node": "^7.0.43",
-        "axios": "^1.7.7",
-        "eslint": "^4.11.0",
-        "request": "^2.88.2",
-        "say": "^0.13.1",
-        "typescript": "^2.6.1"
-    },
-    "volta": {
-        "node": "20.17.0"
-    }
+	"name": "translate-speaker",
+	"displayName": "translate speaker 翻译朗读者API",
+	"description": "这是一个非常简单好用的翻译-朗读-替换/追加翻译一体化插件，你只需要配置一个接口参数即可。",
+	"version": "1.7.5",
+	"publisher": "pcloth",
+	"icon": "assert/logo.png",
+	"engines": {
+		"vscode": "^1.1.37"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+		"*"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/pcloth/translate-speaker.git"
+	},
+	"main": "./extension",
+	"contributes": {
+		"commands": [
+			{
+				"command": "extension.startTranslate",
+				"title": "翻译并朗读"
+			},
+			{
+				"command": "extension.convertVariableFormat",
+				"title": "转换变量格式并朗读"
+			}
+		],
+		"keybindings": [
+			{
+				"command": "extension.startTranslate",
+				"key": "ctrl+shift+t",
+				"mac": "cmd+shift+t",
+				"when": "editorHasSelection"
+			}
+		],
+		"menus": {
+			"editor/context": [
+				{
+					"command": "extension.startTranslate",
+					"group": "navigation",
+					"when": "editorHasSelection"
+				},
+				{
+					"command": "extension.convertVariableFormat",
+					"group": "navigation",
+					"when": "editorHasSelection"
+				}
+			]
+		},
+		"configuration": {
+			"type": "object",
+			"title": "translate 设置",
+			"properties": {
+				"translateSpeaker.mode": {
+					"type": "string",
+					"default": "manual",
+					"enum": [
+						"manual",
+						"autoEnglish",
+						"autoChinese",
+						"auto"
+					],
+					"description": [
+						"手动模式：必须点击菜单或者快捷键后执行翻译。（翻译结果会弹出拾取菜单）",
+						"自动英文翻译到中文模式：选中英文后，自动翻译（翻译结果只显示在左下角，点击后弹出拾取菜单）",
+						"自动中文翻译到英文模式：选中中文后，自动翻译（翻译结果只显示在左下角，点击后弹出拾取菜单）",
+						"自动翻译模式：选中内容后，自动翻译（翻译结果只显示在左下角，点击后弹出拾取菜单）"
+					]
+				},
+				"translateSpeaker.englishNotCodingMode": {
+					"type": "boolean",
+					"default": false,
+					"description": "英文不转换成变量模式"
+				},
+				"translateSpeaker.pickTypeAndSort": {
+					"type": "array",
+					"default": [
+						"coding",
+						"replace",
+						"append"
+					],
+					"scope": "scope",
+					"description": "配置拾取器和排序：\ncoding=转换成变量模式\nreplace=直接替换原文\nappend=在原文后面追加翻译"
+				},
+				"translateSpeaker.pickLabelFormat": {
+					"type": "string",
+					"default": "{num} [ {shortText} ] {midstr}{typeName} => [ {shortOutText} ]",
+					"description": "拾取器的显示格式"
+				},
+				"translateSpeaker.showPickDesc": {
+					"type": "boolean",
+					"default": true,
+					"description": "是否显示拾取器的描述"
+				},
+				"translateSpeaker.codingFormat": {
+					"type": "array",
+					"default": [
+						"auto",
+						"PascalCase",
+						"lowerCamelCase",
+						"snake_case",
+						"SNAKE_CASE",
+						"kebab-case",
+						"space"
+					],
+					"scope": "scope",
+					"description": "转换成变量模式的格式：\nauto=自动识别\nPascalCase=大驼峰\nlowerCamelCase=小驼峰\nsnake_case=小写蛇形（下划线）\nSNAKE_CASE=大写蛇型（下划线）\nspace=空格\nkebab-case=短横线"
+				},
+				"translateSpeaker.enableSpeak": {
+					"type": "boolean",
+					"default": true,
+					"description": "启用朗读"
+				},
+				"translateSpeaker.translateTimeout": {
+					"type": "number",
+					"default": 15000,
+					"description": "翻译显示时间"
+				},
+				"translateSpeaker.wordMaxLength": {
+					"type": "number",
+					"default": 34,
+					"description": "超过这个长度就不处理了。"
+				},
+				"translateSpeaker.apiType": {
+					"type": "string",
+					"default": "bing",
+					"enum": [
+						"baidu",
+						"bing",
+						"tencent",
+						"googleFree"
+					],
+					"description": [
+						"百度翻译API-需要配置账号",
+						"必应接口-需要配置appid，网上可搜索到免费的appid，有些账号需要国区用，有些账号需要VPN",
+						"谷歌免费接口(VPN)-无需配置账号"
+					]
+				},
+				"translateSpeaker.apiAccount": {
+					"type": "array",
+					"default": [
+						"bing=AFC76A66CF4F434ED080D245C30CF1E71C22959C,,1"
+					],
+					"scope": "scope",
+					"description": "翻译API账号，格式：apiTyp=appid,password,多账号key（比如2）"
+				},
+				"translateSpeaker.apiAccountKey": {
+					"type": "string",
+					"default": "",
+					"description": "如果同一个apiType有多个账号，可以在这里指定一个字符串，用来匹配translateSpeaker.apiAccount参数中的多账号key"
+				},
+				"translateSpeaker.appId": {
+					"type": "string",
+					"default": "",
+					"description": "翻译API的账号，通常是appid"
+				},
+				"translateSpeaker.password": {
+					"type": "string",
+					"default": "",
+					"description": "翻译API的账号密钥，通常是指password或者appSecret"
+				}
+			}
+		}
+	},
+	"scripts": {
+		"postinstall": "node ./node_modules/vscode/bin/install",
+		"test": "node ./node_modules/vscode/bin/test"
+	},
+	"devDependencies": {
+		"@types/mocha": "^2.2.42",
+		"@types/node": "^7.0.43",
+		"eslint": "^4.11.0",
+		"typescript": "^2.6.1",
+		"vscode": "^1.1.37"
+	},
+	"dependencies": {
+		"@types/mocha": "^2.2.42",
+		"@types/node": "^7.0.43",
+		"axios": "^1.7.7",
+		"eslint": "^4.11.0",
+		"request": "^2.88.2",
+		"say": "^0.13.1",
+		"typescript": "^2.6.1"
+	},
+	"volta": {
+		"node": "20.17.0"
+	},
+	"__metadata": {
+		"id": "c922475b-d6d6-4474-8958-be41acb60f36",
+		"publisherId": "98656603-2cfb-4ff5-b71e-706fae481c28",
+		"publisherDisplayName": "pcloth",
+		"targetPlatform": "undefined",
+		"isApplicationScoped": false,
+		"isPreReleaseVersion": false,
+		"hasPreReleaseVersion": false,
+		"installedTimestamp": 1731590446494,
+		"pinned": true,
+		"preRelease": false,
+		"source": "gallery"
+	}
 }
