@@ -9,8 +9,9 @@ const freeApi = require('./lib/freeApi.js');
 const { e2var, typeMaps } = require('./lib/englishToVariable.js');
 const { getConfigValue, isChinese, showInformationMessage, speakText, englishClearSelectionText, longTextShowShort } = require('./lib/common.js');
 
+const englishNotCodingMode = getConfigValue('englishNotCodingMode');
 let $event = {
-    fileExtension: '', // 文件后缀，用来确定输出英文格式
+    fileExtension: '', // 文件后缀，用来确定输出英文格式 [ output in english format ]
     results: { text: '', from: '', to: '', results: [] }, // 翻译结果
 }
 
@@ -152,7 +153,7 @@ function formatPickerItem(options) {
         const reg = /\{(.*?)\}/g
         const arr = pickLabelFormat.match(reg)
         arr.forEach(row=>{
-            const key = row.replace(/[{}]/g, '')
+            const key = row.replace('{','').replace('}','')
             const value = options[key] || ''
             label = label.replace(row,value)
         })
@@ -204,12 +205,11 @@ function translateResultsCodingMode({ text, from, to, results }, options = { rep
                         const typeName = typeMaps[fmType] || '-error-'
                         if (fmType === 'auto') {
                             outText = e2var(dst, $event.fileExtension);
-                            // description = `根据（当前文件扩展名）确定格式化类型，并替换当前选中字符串`
+                            description = `适合当前文件，变量、函数、模块`
                         } else {
                             outText = e2var(dst, '', fmType);
-                            // description = `替换选中字符串为（${typeName}）格式化后的字符串`
+                            description = `${typeName}`
                         }
-                        description = `${typeName}`;
                         items.push(formatPickerItem({
                             type,
                             typeName,
@@ -225,7 +225,7 @@ function translateResultsCodingMode({ text, from, to, results }, options = { rep
                     })
                 }
                 // 原文替换
-                if (type === 'replace' && options.replace) {
+                if (type === 'replace' && options.replace && to==='zh') {
                     items.push(formatPickerItem({
                         type,
                         typeName:'',
@@ -250,7 +250,7 @@ function translateResultsCodingMode({ text, from, to, results }, options = { rep
                         shortText,
                         shortDst,
                         dst,
-                        description: `保留原文并在后方[]中加入翻译`,
+                        description: `原文后[ ]中加入翻译`,
                         outText
                     }))
                     num += 1
@@ -314,15 +314,16 @@ class WordVoice {
         let to = 'zh'
         let from = 'en'
         if (!isChinese(text)) {
-            text = englishClearSelectionText(text)
+            if(!englishNotCodingMode){
+                text = englishClearSelectionText(text)
+            }
             speakText(text)
         } else {
             from = 'zh'
             to = 'en'
         }
         getTranslate({ text, from, to }).then(res => {
-            let { results } = res              //1.7.5
-            // let { text, from, to, results } = res //1.7.4 
+            let { results } = res
             let outDst = ''
             results.forEach((item) => {
                 let dst = decodeURIComponent(item.dst);
@@ -339,7 +340,7 @@ class WordVoice {
 
     // 初始化状态栏
     initStatusBarItemText() {
-        this._statusBarItem.text = `( ${getConfigValue('mode')} | ${getConfigValue('apiType')} )`;
+        this._statusBarItem.text = `( ${getConfigValue('apiType')} )`;
         $event.results = { text: '', from: '', to: '', results: [] } // 翻译结果清空
     }
 
@@ -374,7 +375,9 @@ class WordVoice {
             let to = 'zh'
             let from = 'en'
             if (!isChinese(text)) {
-                text = englishClearSelectionText(text)
+                if(!englishNotCodingMode){
+                    text = englishClearSelectionText(text)
+                }
                 speakText(text)
             } else {
                 from = 'zh'
@@ -399,7 +402,8 @@ class WordVoice {
         const originText = this._getSelectionText()
         let text = originText
         if (originText) {
-            text = this._convertVariablesToWords(originText)
+            // text = this._convertVariablesToWords(originText)
+            text =  englishClearSelectionText(originText).toLowerCase();
             translateResultsCodingMode(
                 { text: originText, from: 'en', to: 'en', results: [{ dst: text }] },
                 { append: false, replace: false }
@@ -407,36 +411,39 @@ class WordVoice {
         }
     }
 
-    _convertVariablesToWords(text) {
-        // 判断命名格式
-        if (/^[a-z][a-zA-Z0-9]*$/.test(text)) {
-            // 小驼峰命名格式
-            return text.replace(/([A-Z])/g, ' $1').toLowerCase();
-        } else if (/^[A-Z][a-zA-Z0-9]*$/.test(text)) {
-            // 大驼峰命或全大写
-            return text.replace(/([a-z0-9])([A-Z])/g, "$1 $2").toLowerCase();
-        } else if (/^[a-zA-Z][a-zA-Z0-9_]*$/.test(text)) {
-            // 下划线（蛇形）命名格式
-            return text.replace(/_/g, ' ').toLowerCase();
-        } else if (/^[a-zA-Z][a-zA-Z0-9\-]*$/.test(text)) {
-            // 短横线命名格式
-            return text.replace(/-/g, ' ').toLowerCase();
-        } else {
-            // 无法识别的格式，返回原始文本
-            return text;
-        }
-    }
+    // _convertVariablesToWords(text) {
+    //     // 判断命名格式
+    //     if (/^[a-z][a-zA-Z0-9]*$/.test(text)) {
+    //         // 小驼峰命名格式
+    //         return text.replace(/([a-z0-9])([A-Z])/g, '$1 $2').toLowerCase();
+    //     } else if (/^[A-Z][a-zA-Z0-9]*$/.test(text)) {
+    //         // 大驼峰命名格式，连续大写
+    //         return text.replace(/([a-z0-9])([A-Z])/g, '$1 $2').toLowerCase();
+    //     } else if (/^[a-zA-Z][a-zA-Z0-9_]*$/.test(text)) {
+    //         // 下划线（蛇形）命名格式
+    //         return text.replace(/_/g, ' ').toLowerCase();
+    //     } else if (/^[a-zA-Z][a-zA-Z0-9\-]*$/.test(text)) {
+    //         // 短横线命名格式
+    //         return text.replace(/-/g, ' ').toLowerCase();
+    //     } else {
+    //         // 无法识别的格式，返回原始文本
+    //         return text;
+    //     }
+    // }
 
     // 初始化指令
     _initCommand() {
-    return this._commands.map(cmd => {
-        let obj = vscode.commands.registerCommand(cmd.command, () => {
-            this[cmd.handler]();
-        });
-        this.context.subscriptions.push(obj);
-        return obj;
-    });
-}
+        let arr = []
+        this._commands.forEach(cmd => {
+            let obj = vscode.commands.registerCommand(cmd.command, () => {
+                this[cmd.handler]()
+            })
+            this.context.subscriptions.push(obj);
+            arr.push(obj)
+        })
+        return arr;
+    }
+
     onDidChanage() {
         let editor = vscode.window.activeTextEditor;
         let doc = editor.document;
